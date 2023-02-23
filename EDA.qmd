@@ -28,6 +28,7 @@ library(tidyverse)
 library(mice)
 library(VIM)
 library(naniar)
+library(lubridate)
 ```
 
 ## Data summary
@@ -71,16 +72,6 @@ dfb=dfb[!is.na(dfb$ID),]
 dfc=dfc[!is.na(dfc$ID),]
 ```
 
-Missing values of dfa:
-```{r}
-aggr(dfa, prop = F, number = F,combined=F)
-```
-
-Missing values of dfb:
-```{r}
-aggr(dfb, prop = F, number = F,combined=F)
-```
-
 Remove columns with too much missing values in dfc:
 
 ```{r}
@@ -93,19 +84,105 @@ df_ab <- merge(dfa,dfb,by="ID")
 df_abc=merge(df_ab,dfc,by="ID") 
 ```
 
-Note that 'df_abc' is a table with too much rows, columns and duplicated values, we will mainly use 'df_ab' to do further analysis because special laboratory examination results in dfb is more related to what we want to investigate in this project.
+Note that 'df_abc' is a table with too much rows, columns and duplicated values, we will mainly use 'df_ab' to do further analysis because special laboratory examination results in 'dfb' is more related to what we want to investigate in this project.
 
 Refine the merged data set 'df_ab':
 
 ```{r}
+# change the column names to lower case
 names(df_ab)=tolower(names(df_ab))
-names(df_ab)
+
+# remove the columns that is not very helpful to our investigation
+df_ab=df_ab[,!colnames(df_ab)%in%c('description','first.date','diagnosis.x','diagnosis.y','symptoms','kct','rvvt','lac','admission')]
+
+print(dim(df_ab))
+
+head(df_ab)
+```
+
+We notice that there are only 417 rows in this merged data, which means only 417 patients from the first data set did the special laboratory examination. In the subsequent EDA part, we will mainly focus on these 417 patients.
+
+Sanity check for our target variable 'thrombosis':
+```{r}
+table(df_ab$thrombosis)
+```
+
+We can see that thrombosis of 5 patients are '3', which does not makes sense. Delete these five columns.
+```{r}
+df_ab=df_ab[df_ab$thrombosis!=3,]
+```
+
+Create some new variables for 'df_ab':
+```{r}
+# aggregate three columns 'acl.iga', 'acl.igg', 'acl.igm' into one column
+df_ab$acl_total=df_ab$acl.iga+df_ab$acl.igg+df_ab$acl.igm
+
+# calculate the age when patients did the examinations
+df_ab$age=year(as.Date(df_ab$examination.date))-year(as.Date(df_ab$birthday))
+
+# change the data type of 'ana'
+df_ab$ana=as.numeric(df_ab$ana)
+
+# refine the variable 'ana.pattern'
+df_ab$ana_pattern=""
+df_ab$ana.pattern[is.na(df_ab$ana.pattern)] <- ""
+df_ab[df_ab$ana.pattern =='P'| df_ab$ana.pattern== 'p','ana_pattern']='P'
+df_ab[df_ab$ana.pattern =='S','ana_pattern']='S'
+df_ab[df_ab$ana.pattern =='P,S'| df_ab$ana.pattern== 'S,P'| df_ab$ana.pattern== 'P.S','ana_pattern']='P,S'
+df_ab[df_ab$ana_pattern =="",'ana_pattern']='others'
+
+# remove the columns that are not necessary due to new variables
+df_ab=df_ab[,!colnames(df_ab)%in%c('birthday','examination.date','acl.igg','acl.igm','ana.pattern','acl.iga')]
 ```
 
 ```{r}
-df_ab[,!colnames(df_ab)%in%c('description','first.date','diagnosis.x','diagnosis.y','symptoms')]
-table(df_ab$lac)
+head(df_ab)
 ```
 
+## Exploratory analysis
+
+### Phase I
+
+First check the missing values distribution:
+```{r}
+aggr(df_ab, prop = F, number = F,combined=F)
+```
+
+Only three columns 'sex', 'ana', 'age' contain missing values and the fraction of missing values is very small.
+
+Then check the summary of all the columns:
+```{r}
+summary(df_ab)
+```
+
+Visualize the distribution of variable 'thrombosis':
+```{r}
+hist(df_ab$thrombosis,main='Distribution of thrombosis',xlab='thrombosis')
+```
+
+From this plot, we can see that thrombosis of most patients who did the special examination is negative.
+
+Visualize the distribution of age:
+```{r}
+hist(df_ab$age,main='Distribution of age',xlab='age')
+```
+
+We can see that the ages of patients range from 3 to 73, and a large amount of them are between 20 and 30 years old.
+
+Draw a boxplot for acl_total
+```{r}
+boxplot(df_ab$acl_total,main='boxplot of acl_total')
+```
+
+Obviously, there is an extreme outlier of this variable. Lets remove it and check again.
+
+```{r}
+df_ab[df_ab$acl_total >500,'acl_total']=median(df_ab$acl_total)
+boxplot(df_ab$acl_total,main='boxplot of acl_total')
+```
+
+According to this plot, most of the values are below 50, but several values are much larger than others.
+
+### Phase II
 
 
