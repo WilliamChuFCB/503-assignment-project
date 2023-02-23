@@ -1,0 +1,111 @@
+
+---
+title: "Exploratory Data Analysis for Collagen Diseases Data"
+author:
+  - name: Wendi Chu
+
+date: "2023/02/21"
+
+format:
+    html:
+        toc: true
+        embed-resources: true
+        theme: default
+        code-copy: true
+        code-line-numbers: true
+        number-sections: true
+        highlight-style: github
+        
+---
+
+**URL to my GitHub repository:**
+
+https://github.com/anly503/hw2-spring-2023-WilliamChuFCB
+
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(mice)
+library(VIM)
+library(naniar)
+```
+
+## Data summary
+
+Collagen disease is a kind of auto-immune disease that patients will generate antibodies to attack to themselves. There are different kinds of collagen diseases, and thrombosis is one of the most important and severe issues among all the categories. 
+
+These given data sets contain information of patients who came to the outpatient clinic on collagen disease, and laboratory examinations of patients. Especially, special laboratory examinations for certain patients include data that highly related to thrombosis.
+
+## Initial questions
+
+## Data munging
+
+```{r}
+dfa <- read.csv("./data/TSUMOTO_A.csv")
+dfb <- read.csv("./data/TSUMOTO_B.csv")
+dfc <- read.csv("./data/TSUMOTO_C.csv", stringsAsFactors = FALSE, fileEncoding = "latin1")
+```
+
+First of all, remove the duplicated rows and look at the dimensions of three data sets:
+
+```{r}
+dfa <- dfa[!duplicated(dfa$ID), ]
+dfb <- dfb[!duplicated(dfb$ID), ]
+dfc <- dfc[!duplicated(dfc), ]
+
+print(dim(dfa))
+print(dim(dfb))
+print(dim(dfc))
+```
+
+Remove all the columns with no ID, because we can not connect these rows to any patient.
+
+```{r}
+# convert "" to NA
+dfa=replace_with_na_all(dfa, ~.x=="")
+dfb=replace_with_na_all(dfb, ~.x=="")
+
+# remove rows where ID is NA
+dfa=dfa[!is.na(dfa$ID),]
+dfb=dfb[!is.na(dfb$ID),]
+dfc=dfc[!is.na(dfc$ID),]
+```
+
+Missing values of dfa:
+```{r}
+aggr(dfa, prop = F, number = F,combined=F)
+```
+
+Missing values of dfb:
+```{r}
+aggr(dfb, prop = F, number = F,combined=F)
+```
+
+Remove columns with too much missing values in dfc:
+
+```{r}
+dfc=dfc[,colSums(is.na(dfc))<5000]
+```
+
+Data merging:
+```{r}
+df_ab <- merge(dfa,dfb,by="ID")
+df_abc=merge(df_ab,dfc,by="ID") 
+```
+
+Note that 'df_abc' is a table with too much rows, columns and duplicated values, we will mainly use 'df_ab' to do further analysis because special laboratory examination results in dfb is more related to what we want to investigate in this project.
+
+Refine the merged data set 'df_ab':
+
+```{r}
+names(df_ab)=tolower(names(df_ab))
+names(df_ab)
+```
+
+```{r}
+df_ab[,!colnames(df_ab)%in%c('description','first.date','diagnosis.x','diagnosis.y','symptoms')]
+table(df_ab$lac)
+```
+
+
+
