@@ -1,6 +1,6 @@
 ## About this project
 
-This is an small assignment project of anly 503 (Advanced Data Visualization). I mainly used R to create different visualizations based on medical data and developed some data insights.
+This is a small assignment project of anly 503 (Advanced Data Visualization). I mainly used R to create different visualizations based on medical data and developed some data insights.
 
 ## Introduction
 
