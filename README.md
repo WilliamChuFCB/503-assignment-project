@@ -1,3 +1,7 @@
+## About this project
+
+This is an small assignment project of anly 503 (Advanced Data Visualization). I mainly used R to create different visualizations based on medical data and developed some data insights.
+
 ## Introduction
 
 Collagen disease is a kind of auto-immune disease whose patients will generate antibodies to attack to themselves, which is harmful and dangerous to their bodies. Among all kinds of collagen diseases, thrombosis is the most important and severe, and it is also the major cause of death in collagen diseases. Therefore, it is important and necessary to detect and predict the possibilities of thrombosis. 
